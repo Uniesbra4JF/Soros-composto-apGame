@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio Alavancagem 30 -> 512</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .checkbox-wrapper input:checked + div {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        .checkbox-wrapper input:checked + div svg {
+            display: block;
+        }
+        
+        /* Smooth transitions for row completion */
+        tr { transition: all 0.3s ease; }
+        tr.completed {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #6ee7b7;
+        }
+        tr.completed td {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        tr.completed td.status-cell, 
+        tr.completed td.value-cell {
+            text-decoration: none;
+            opacity: 1;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <!-- Header -->
+    <header class="text-center mb-8 max-w-2xl w-full">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mb-4">
+            <i class="fas fa-chart-line text-2xl"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Desafio 7 Rodadas</h1>
+        <p class="text-gray-400">Transforme <span class="text-emerald-400 font-bold">R$ 30,00</span> em <span class="text-emerald-400 font-bold">R$ 512,58</span> com Odd 1.50</p>
+    </header>
+
+    <!-- Control Panel -->
+    <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 w-full max-w-4xl mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+                <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Banca Inicial</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-3 text-gray-500">R$</span>
+                    <input type="number" id="startAmount" value="30" oninput="handleInputChange()" class="w-full bg-gray-900 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Odd Fixa</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-3 text-gray-500">@</span>
+                    <input type="number" step="0.01" id="oddValue" value="1.50" oninput="handleInputChange()" class="w-full bg-gray-900 border border-gray-600 rounded-lg py-2 pl-8 pr-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
+                </div>
+            </div>
+            <div class="flex items-end">
+                <button onclick="resetCalculator()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 h-[42px]">
+                    <i class="fas fa-rotate-right"></i> Reiniciar / Recalcular
+                </button>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mt-6">
+            <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-400">Progresso da Banca</span>
+                <span class="text-emerald-400 font-bold" id="progressText">0%</span>
+            </div>
+            <div class="w-full bg-gray-900 rounded-full h-4 overflow-hidden border border-gray-700">
+                <div id="progressBar" class="bg-gradient-to-r from-emerald-600 to-emerald-400 h-4 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Checklist Table -->
+    <div class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 w-full max-w-4xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-900/50 text-gray-400 text-xs uppercase border-b border-gray-700">
+                        <th class="p-4 w-16 text-center">#</th>
+                        <th class="p-4">Entrada (Aposta)</th>
+                        <th class="p-4 w-24">Odd</th>
+                        <th class="p-4 text-emerald-400">Retorno Total</th>
+                        <th class="p-4 w-24 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-gray-700">
+                    <!-- Javascript populates this -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Info Footer -->
+    <div class="mt-8 text-center text-gray-500 text-sm max-w-lg">
+        <p>A estratégia consiste em reinvestir o lucro total (Juros Compostos) a cada rodada. Uma falha retorna ao estágio 0 (R$ 30,00).</p>
+        <p class="mt-2 text-xs text-gray-600" id="saveStatus"><i class="fas fa-check-circle mr-1"></i> Sistema de salvamento automático ativo.</p>
+    </div>
+
+    <script>
+        // Configuration
+        const TOTAL_ROUNDS = 7;
+        const STORAGE_KEY_STATE = 'betting_challenge_state_v2'; // Alterado a chave para evitar conflitos antigos
+        const STORAGE_KEY_VALUES = 'betting_challenge_values_v2';
+        
+        // Global State
+        let progressState = new Array(TOTAL_ROUNDS).fill(false);
+
+        // DOM Elements
+        const tableBody = document.getElementById('tableBody');
+        const startInput = document.getElementById('startAmount');
+        const oddInput = document.getElementById('oddValue');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // First load data, THEN generate table
+            loadState();
+            generateTable();
+        });
+
+        // --- Core Logic ---
+
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function calculateRows() {
+            let start = parseFloat(startInput.value) || 0;
+            let odd = parseFloat(oddInput.value) || 1.0;
+            let current = start;
+            let rows = [];
+
+            for (let i = 0; i < TOTAL_ROUNDS; i++) {
+                let profit = current * odd;
+                rows.push({
+                    index: i + 1,
+                    entry: current,
+                    odd: odd,
+                    total: profit
+                });
+                current = profit;
+            }
+            return rows;
+        }
+
+        function generateTable() {
+            const data = calculateRows();
+            tableBody.innerHTML = '';
+            
+            let completedCount = 0;
+
+            data.forEach((row, idx) => {
+                const isChecked = progressState[idx]; // Reads from global state
+                if(isChecked) completedCount++;
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-gray-700/50 ${isChecked ? 'completed' : ''}`;
+                
+                // Note: The checked attribute is set directly in HTML based on state
+                tr.innerHTML = `
+                    <td class="p-4 text-center text-gray-500 font-mono">${row.index}</td>
+                    <td class="p-4 font-medium text-gray-300">${formatCurrency(row.entry)}</td>
+                    <td class="p-4 text-gray-400 font-mono text-sm">@${row.odd.toFixed(2)}</td>
+                    <td class="p-4 value-cell text-emerald-400 font-bold text-lg">${formatCurrency(row.total)}</td>
+                    <td class="p-4 text-center status-cell">
+                        <label class="checkbox-wrapper cursor-pointer inline-block relative w-6 h-6">
+                            <input type="checkbox" 
+                                class="peer hidden" 
+                                onchange="toggleRound(${idx})" 
+                                ${isChecked ? 'checked' : ''}> 
+                            <div class="w-6 h-6 border-2 border-gray-500 rounded bg-gray-900 transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-500 flex items-center justify-center">
+                                <svg class="hidden w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </label>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            updateProgress(completedCount);
+        }
+
+        function toggleRound(index) {
+            // Update state
+            progressState[index] = !progressState[index];
+            
+            // Save IMMEDIATELY
+            saveState();
+            
+            // Redraw to reflect changes
+            generateTable();
+
+            // Check for victory
+            if (index === TOTAL_ROUNDS - 1 && progressState[index]) {
+                triggerCelebration();
+            }
+        }
+
+        function handleInputChange() {
+            saveState();
+            generateTable();
+        }
+
+        function updateProgress(count) {
+            const percentage = Math.round((count / TOTAL_ROUNDS) * 100);
+            progressBar.style.width = `${percentage}%`;
+            progressText.innerText = `${percentage}%`;
+            
+            if(percentage === 100) {
+                progressBar.classList.remove('from-emerald-600', 'to-emerald-400');
+                progressBar.classList.add('from-yellow-400', 'to-orange-500'); 
+                progressText.classList.add('text-yellow-400');
+                progressText.classList.remove('text-emerald-400');
+            } else {
+                progressBar.classList.add('from-emerald-600', 'to-emerald-400');
+                progressBar.classList.remove('from-yellow-400', 'to-orange-500');
+                progressText.classList.remove('text-yellow-400');
+                progressText.classList.add('text-emerald-400');
+            }
+        }
+
+        // --- Persistence Logic ---
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(progressState));
+                localStorage.setItem(STORAGE_KEY_VALUES, JSON.stringify({
+                    start: startInput.value,
+                    odd: oddInput.value
+                }));
+                // Visual feedback (optional)
+                document.getElementById('saveStatus').innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-500"></i> Salvo com sucesso.';
+                setTimeout(() => {
+                    document.getElementById('saveStatus').innerHTML = '<i class="fas fa-save mr-1"></i> Seus dados são salvos automaticamente.';
+                }, 2000);
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+                document.getElementById('saveStatus').innerText = 'Erro ao salvar (verifique permissões do navegador)';
+            }
+        }
+
+        function loadState() {
+            try {
+                const savedState = localStorage.getItem(STORAGE_KEY_STATE);
+                const savedValues = localStorage.getItem(STORAGE_KEY_VALUES);
+                
+                // Load Checklist State
+                if (savedState) {
+                    const parsed = JSON.parse(savedState);
+                    // Ensure it is a valid array of the correct length
+                    if (Array.isArray(parsed) && parsed.length === TOTAL_ROUNDS) {
+                        progressState = parsed;
+                    }
+                }
+                
+                // Load Values (Start Amount / Odds)
+                if (savedValues) {
+                    const values = JSON.parse(savedValues);
+                    if (values.start) startInput.value = values.start;
+                    if (values.odd) oddInput.value = values.odd;
+                }
+            } catch (e) {
+                console.error("Erro crítico ao carregar dados:", e);
+                // Fallback to defaults if loading fails completely
+                progressState = new Array(TOTAL_ROUNDS).fill(false);
+            }
+        }
+
+        function resetCalculator() {
+            if(confirm('Tem certeza que deseja reiniciar todo o progresso?')) {
+                progressState = new Array(TOTAL_ROUNDS).fill(false);
+                startInput.value = 30;
+                oddInput.value = 1.50;
+                saveState();
+                generateTable();
+            }
+        }
+
+        function triggerCelebration() {
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#34d399', '#fbbf24']
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#34d399', '#fbbf24']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    </script>
+</body>
+</html>
+
+
