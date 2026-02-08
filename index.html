@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alavancagem Pro | Gestão de Soros</title>
+    <title>Alavancagem Pro | Gestão de Pastas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -28,106 +28,133 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .custom-checkbox:checked + div {
-            background-color: #10b981;
-            border-color: #10b981;
-        }
-
         .row-completed {
             background-color: rgba(16, 185, 129, 0.05);
             opacity: 0.8;
         }
 
-        /* Hide arrows in number input */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
 
-        .round-btn.active {
-            background-color: #10b981;
-            border-color: #34d399;
-            color: white;
-            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        #mainMenu {
+            transform-origin: top right;
+            transition: all 0.2s ease-out;
+        }
+        .menu-hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-4px);
+            border-color: #10b981;
         }
     </style>
 </head>
 <body class="min-h-screen pb-12">
 
-    <!-- Header -->
+    <!-- Header / Nav -->
     <nav class="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
         <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="goToHome()">
                 <div class="bg-emerald-500 p-2 rounded-lg">
                     <i class="fas fa-bolt text-white"></i>
                 </div>
                 <span class="font-extrabold text-xl tracking-tight uppercase">Alavancagem<span class="text-emerald-500">Pro</span></span>
             </div>
-            <div class="flex items-center gap-4">
-                <button onclick="resetWholeApp()" class="text-slate-400 hover:text-white text-sm transition-colors">
-                    <i class="fas fa-trash-can mr-1"></i> Reiniciar
+            
+            <!-- Botão Menu (SÓ APARECE DENTRO DE UM PROJETO) -->
+            <div id="projectNavActions" class="relative hidden">
+                <button onclick="toggleMenu()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl border border-slate-700 transition-all flex items-center gap-2">
+                    <i class="fas fa-bars"></i>
+                    <span class="text-sm font-bold">Menu</span>
                 </button>
+
+                <div id="mainMenu" class="menu-hidden absolute right-0 mt-2 w-80 glass-card border border-slate-700 rounded-2xl shadow-2xl z-[60] overflow-hidden">
+                    <div class="p-4 border-b border-slate-700/50 bg-slate-900/30">
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex justify-between items-center">
+                            Histórico desta Pasta
+                            <button onclick="clearHistory()" class="text-rose-400 hover:text-rose-300 normal-case tracking-normal font-bold">Limpar</button>
+                        </h3>
+                        <div id="historyList" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                            <!-- Injetado por JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="p-2 space-y-1">
+                        <button onclick="resetWholeApp()" class="w-full text-left px-4 py-3 hover:bg-rose-500/10 text-rose-400 text-sm font-bold rounded-xl transition-colors flex items-center gap-3">
+                            <i class="fas fa-rotate-left"></i>
+                            Reiniciar Desafio
+                        </button>
+                        <button onclick="goToHome()" class="w-full text-left px-4 py-3 hover:bg-slate-700/50 text-slate-300 text-sm font-bold rounded-xl transition-colors flex items-center gap-3">
+                            <i class="fas fa-folder-open"></i>
+                            Voltar para Pastas
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- TELA INICIAL: LISTA DE PASTAS -->
+    <main id="homeView" class="max-w-5xl mx-auto px-4 mt-12">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div>
+                <h1 class="text-3xl font-black text-white">Minhas Pastas</h1>
+                <p class="text-slate-400">Gerencie múltiplos projetos de alavancagem independentes.</p>
+            </div>
+            <button onclick="createNewProject()" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-6 py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-3">
+                <i class="fas fa-plus"></i>
+                Criar Novo Projeto
+            </button>
+        </div>
+
+        <div id="projectsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Projetos injetados aqui -->
+        </div>
+    </main>
+
+    <!-- TELA DO EDITOR: DENTRO DE UMA PASTA -->
+    <main id="editorView" class="max-w-5xl mx-auto px-4 mt-8 hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Sidebar: Configurações -->
         <aside class="lg:col-span-4 space-y-6">
             <div class="glass-card rounded-2xl p-6 shadow-2xl border border-slate-700">
-                <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
-                    <i class="fas fa-sliders-h text-emerald-400"></i> Parâmetros
-                </h2>
+                <div class="mb-6">
+                    <span id="activeProjectLabel" class="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded">Pasta Ativa</span>
+                    <h2 id="activeProjectName" class="text-2xl font-black text-white mt-2 truncate">Nome do Projeto</h2>
+                </div>
                 
                 <div class="space-y-5">
                     <div>
                         <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Investimento Inicial</label>
                         <div class="relative">
                             <span class="absolute left-3 top-2.5 text-slate-500 font-medium">R$</span>
-                            <input type="number" id="baseCapital" value="30" oninput="updateCalculations()" 
+                            <input type="number" id="baseCapital" oninput="updateCalculations()" 
                                 class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
                         </div>
                     </div>
 
                     <div>
                         <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Quantidade de Rodadas</label>
-                        <div class="grid grid-cols-4 gap-2">
-                            <button onclick="setRounds(3)" id="btn-round-3" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">3</button>
-                            <button onclick="setRounds(5)" id="btn-round-5" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">5</button>
-                            <button onclick="setRounds(7)" id="btn-round-7" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">7</button>
-                            <button onclick="setRounds(10)" id="btn-round-10" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">10</button>
+                        <div class="relative">
+                            <input type="number" id="roundsCount" min="1" max="50" oninput="updateRoundsManual()" 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 px-4 text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-center font-bold">
                         </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-700/50">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm text-slate-300">Resgatar capital na:</span>
-                            <select id="withdrawRound" onchange="updateCalculations()" class="bg-slate-800 border border-slate-700 rounded-md text-sm px-2 py-1 outline-none text-white">
-                                <option value="0">Nenhuma</option>
-                                <option value="1">1ª Rodada</option>
-                                <option value="2">2ª Rodada</option>
-                                <option value="3">3ª Rodada</option>
-                                <option value="4">4ª Rodada</option>
-                                <option value="5">5ª Rodada</option>
-                            </select>
-                        </div>
-                        <p class="text-[10px] text-slate-500 italic text-center">Isso garante o retorno do seu investimento inicial cedo.</p>
                     </div>
                 </div>
             </div>
 
             <div class="glass-card rounded-2xl p-6 hidden md:block">
-                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase">Crescimento Exponencial</h3>
+                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase">Crescimento Projetado</h3>
                 <canvas id="growthChart" height="200"></canvas>
             </div>
         </aside>
 
-        <!-- Main Content: Tabela e Progresso -->
         <section class="lg:col-span-8 space-y-6">
-            
-            <!-- Resumo de Progresso -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="glass-card rounded-2xl p-4 border-l-4 border-emerald-500">
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Progresso</p>
@@ -141,7 +168,7 @@
                     <span id="stat-total" class="text-xl font-black text-emerald-400 leading-none">R$ 0,00</span>
                 </div>
                 <div class="glass-card rounded-2xl p-4 border-l-4 border-amber-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Entrada Atual</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Próxima Entrada</p>
                     <span id="stat-next-bet" class="text-xl font-black text-white leading-none">R$ 0,00</span>
                 </div>
                 <div class="glass-card rounded-2xl p-4 border-l-4 border-purple-500">
@@ -150,7 +177,6 @@
                 </div>
             </div>
 
-            <!-- Tabela Interativa -->
             <div class="glass-card rounded-2xl shadow-xl overflow-hidden border border-slate-700">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -164,109 +190,191 @@
                             </tr>
                         </thead>
                         <tbody id="challengeTable" class="divide-y divide-slate-800">
-                            <!-- JS Injects Here -->
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <div id="adviceBox" class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-200 text-sm flex gap-3">
-                <i class="fas fa-info-circle mt-1"></i>
-                <p id="adviceText">Ajuste as odds conforme o mercado e marque suas vitórias.</p>
             </div>
         </section>
     </main>
 
     <script>
-        // --- State ---
-        let appState = {
-            capital: 30,
-            rounds: 7,
-            withdrawAt: 0,
-            checkpoints: [], 
-            odds: [],
-            chart: null
+        // --- State Management ---
+        let globalData = {
+            projects: {}, // { "Nome": { capital, rounds, checkpoints, odds, history } }
+            activeProject: null
         };
 
-        const STORAGE_KEY = 'alavancagem_pro_v2_brazil';
+        const STORAGE_KEY = 'alavancagem_pro_v4_folders';
 
-        // --- Init ---
         window.onload = () => {
-            loadFromStorage();
-            initUI();
-            initChart();
-            refresh();
+            loadAllData();
+            renderProjectsGrid();
+            
+            document.addEventListener('click', (e) => {
+                const menu = document.getElementById('mainMenu');
+                const btn = e.target.closest('button');
+                if (menu && !menu.contains(e.target) && (!btn || !btn.onclick?.toString().includes('toggleMenu'))) {
+                    menu.classList.add('menu-hidden');
+                }
+            });
         };
 
-        function initUI() {
-            document.getElementById('baseCapital').value = appState.capital;
-            document.getElementById('withdrawRound').value = appState.withdrawAt;
-            updateRoundButtons();
+        // --- View Navigation ---
+        function goToHome() {
+            globalData.activeProject = null;
+            document.getElementById('homeView').classList.remove('hidden');
+            document.getElementById('editorView').classList.add('hidden');
+            document.getElementById('projectNavActions').classList.add('hidden');
+            renderProjectsGrid();
         }
 
+        function openProject(name) {
+            globalData.activeProject = name;
+            const p = globalData.projects[name];
+            
+            document.getElementById('homeView').classList.add('hidden');
+            document.getElementById('editorView').classList.remove('hidden');
+            document.getElementById('projectNavActions').classList.remove('hidden');
+            
+            document.getElementById('activeProjectName').innerText = name;
+            document.getElementById('baseCapital').value = p.capital;
+            document.getElementById('roundsCount').value = p.rounds;
+            
+            initChart();
+            refresh();
+        }
+
+        // --- Project CRUD ---
+        function createNewProject() {
+            const name = prompt("Digite o nome da nova pasta / projeto:");
+            if (!name || name.trim() === "") return;
+            if (globalData.projects[name]) {
+                alert("Já existe uma pasta com esse nome.");
+                return;
+            }
+
+            globalData.projects[name] = {
+                capital: 30,
+                rounds: 7,
+                checkpoints: new Array(7).fill(false),
+                odds: new Array(7).fill(1.50),
+                history: []
+            };
+
+            saveAllData();
+            renderProjectsGrid();
+        }
+
+        function deleteProject(name, e) {
+            e.stopPropagation();
+            if (confirm(`Tem certeza que deseja excluir a pasta "${name}" e todo seu histórico?`)) {
+                delete globalData.projects[name];
+                saveAllData();
+                renderProjectsGrid();
+            }
+        }
+
+        function renderProjectsGrid() {
+            const grid = document.getElementById('projectsGrid');
+            grid.innerHTML = '';
+
+            const names = Object.keys(globalData.projects);
+
+            if (names.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-20 text-center glass-card rounded-3xl border-dashed border-2 border-slate-700">
+                        <i class="fas fa-folder-open text-5xl text-slate-700 mb-4"></i>
+                        <p class="text-slate-500">Nenhum projeto criado. Clique no botão acima para começar.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            names.forEach(name => {
+                const p = globalData.projects[name];
+                const card = document.createElement('div');
+                card.className = "folder-card glass-card p-6 rounded-3xl border border-slate-700 cursor-pointer transition-all flex flex-col justify-between h-48 relative overflow-hidden group";
+                card.onclick = () => openProject(name);
+
+                card.innerHTML = `
+                    <div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="deleteProject('${name}', event)" class="text-slate-500 hover:text-rose-500">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <i class="fas fa-folder text-emerald-500 text-3xl mb-4"></i>
+                        <h3 class="text-xl font-bold text-white truncate pr-6">${name}</h3>
+                        <p class="text-xs text-slate-500">${p.rounds} Rodadas • Banca R$ ${p.capital.toFixed(2)}</p>
+                    </div>
+                    <div class="flex justify-between items-end border-t border-slate-800 pt-4">
+                        <span class="text-[10px] font-black uppercase text-slate-400">Sucessos: ${p.history.length}</span>
+                        <i class="fas fa-chevron-right text-emerald-500"></i>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- Core Editor Logic ---
         function refresh() {
             renderTable();
             updateStats();
-            saveToStorage();
+            renderHistory();
+            saveAllData();
         }
 
-        function setRounds(n) {
-            if(n !== appState.rounds) {
-                appState.rounds = n;
-                // Preencher arrays caso sejam novos
-                appState.checkpoints = new Array(n).fill(false);
-                appState.odds = new Array(n).fill(1.50);
-                updateRoundButtons();
+        function toggleMenu() {
+            document.getElementById('mainMenu').classList.toggle('menu-hidden');
+        }
+
+        function updateRoundsManual() {
+            const name = globalData.activeProject;
+            const p = globalData.projects[name];
+            const val = parseInt(document.getElementById('roundsCount').value) || 1;
+            
+            if (val !== p.rounds) {
+                p.rounds = val;
+                p.checkpoints = new Array(val).fill(false);
+                p.odds = new Array(val).fill(1.50);
                 refresh();
             }
         }
 
-        function updateRoundButtons() {
-            document.querySelectorAll('.round-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if(btn.id === `btn-round-${appState.rounds}`) btn.classList.add('active');
-            });
-        }
-
         function updateCalculations() {
-            appState.capital = parseFloat(document.getElementById('baseCapital').value) || 0;
-            appState.withdrawAt = parseInt(document.getElementById('withdrawRound').value);
+            const p = globalData.projects[globalData.activeProject];
+            p.capital = parseFloat(document.getElementById('baseCapital').value) || 0;
             refresh();
         }
 
         function updateOdd(index, value) {
-            appState.odds[index] = parseFloat(value) || 1.01;
+            const p = globalData.projects[globalData.activeProject];
+            p.odds[index] = parseFloat(value) || 1.01;
             refresh();
         }
 
         function toggleStep(index) {
-            appState.checkpoints[index] = !appState.checkpoints[index];
-            if (index === appState.rounds - 1 && appState.checkpoints[index]) {
+            const p = globalData.projects[globalData.activeProject];
+            p.checkpoints[index] = !p.checkpoints[index];
+            if (index === p.rounds - 1 && p.checkpoints[index]) {
                 triggerVictory();
             }
             refresh();
         }
 
-        // --- Rendering ---
         function renderTable() {
+            const p = globalData.projects[globalData.activeProject];
             const tbody = document.getElementById('challengeTable');
             tbody.innerHTML = '';
             
-            let currentBalance = appState.capital;
+            let currentBalance = p.capital;
             let chartData = [currentBalance];
 
-            for (let i = 0; i < appState.rounds; i++) {
-                const isChecked = appState.checkpoints[i];
-                const odd = appState.odds[i] || 1.50;
-                
+            for (let i = 0; i < p.rounds; i++) {
+                const isChecked = p.checkpoints[i];
+                const odd = p.odds[i] || 1.50;
                 let entryValue = currentBalance;
                 let returnTotal = entryValue * odd;
-
-                let withdrawMsg = "";
-                if (appState.withdrawAt === (i + 1)) {
-                    returnTotal -= appState.capital;
-                    withdrawMsg = `<span class="text-[9px] block text-amber-400 font-bold uppercase tracking-tighter">Resgate: -${formatCurrency(appState.capital)}</span>`;
-                }
 
                 const tr = document.createElement('tr');
                 tr.className = `transition-all ${isChecked ? 'row-completed' : 'hover:bg-slate-800/40'}`;
@@ -284,17 +392,12 @@
                             class="w-16 bg-slate-900/50 border border-slate-700 rounded text-xs p-1 text-center focus:border-emerald-500 outline-none text-white font-mono">
                     </td>
                     <td class="p-4">
-                        <span class="font-bold text-emerald-400">
-                            ${formatCurrency(returnTotal)}
-                            ${withdrawMsg}
-                        </span>
+                        <span class="font-bold text-emerald-400">${formatCurrency(returnTotal)}</span>
                     </td>
                     <td class="p-4 text-center">
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" 
-                                ${isChecked ? 'checked' : ''} 
-                                onchange="toggleStep(${i})">
-                            <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                            <input type="checkbox" class="sr-only peer" ${isChecked ? 'checked' : ''} onchange="toggleStep(${i})">
+                            <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
                         </label>
                     </td>
                 `;
@@ -303,67 +406,121 @@
                 currentBalance = returnTotal;
                 chartData.push(currentBalance);
             }
-
             updateChart(chartData);
         }
 
         function updateStats() {
-            const completedCount = appState.checkpoints.filter(c => c === true).length;
-            const progress = Math.round((completedCount / appState.rounds) * 100);
+            const p = globalData.projects[globalData.activeProject];
+            const completedCount = p.checkpoints.filter(c => c === true).length;
+            const progress = Math.round((completedCount / p.rounds) * 100);
             
             document.getElementById('stat-progress').innerText = `${progress}%`;
-            document.getElementById('stat-completed').innerText = `${completedCount}/${appState.rounds}`;
+            document.getElementById('stat-completed').innerText = `${completedCount}/${p.rounds}`;
             
-            // Calculo da Probabilidade teórica (1/odd) * (1/odd)...
             let prob = 100;
-            appState.odds.forEach(o => {
-                prob *= (1 / o);
-            });
+            p.odds.forEach(o => { prob *= (1 / o); });
             document.getElementById('stat-prob').innerText = `${prob.toFixed(2)}%`;
 
-            // Calculo dos Retornos
-            let bal = appState.capital;
+            let bal = p.capital;
             let nextBet = bal;
 
-            for(let i=0; i<appState.rounds; i++){
-                if (appState.checkpoints[i]) {
-                    bal = (bal * appState.odds[i]);
-                    if(appState.withdrawAt === (i+1)) bal -= appState.capital;
-                    if(i+1 < appState.rounds) nextBet = bal;
+            for(let i=0; i<p.rounds; i++){
+                if (p.checkpoints[i]) {
+                    bal = (bal * p.odds[i]);
+                    if(i+1 < p.rounds) nextBet = bal;
                 } else {
                     nextBet = bal;
-                    for(let j=i; j<appState.rounds; j++) {
-                        bal = (bal * appState.odds[j]);
-                        if(appState.withdrawAt === (j+1)) bal -= appState.capital;
-                    }
+                    for(let j=i; j<p.rounds; j++) bal = (bal * p.odds[j]);
                     break;
                 }
             }
 
             document.getElementById('stat-total').innerText = formatCurrency(bal);
             document.getElementById('stat-next-bet').innerText = formatCurrency(nextBet);
-            
-            const advice = document.getElementById('adviceText');
-            if (progress === 0) advice.innerText = "Dica: Em mercados voláteis, tente odds entre 1.30 e 1.60 para maior segurança inicial.";
-            else if (progress < 100) advice.innerText = "Foco total! O crescimento agora se torna muito mais rápido.";
-            else advice.innerText = "META BATIDA! Saque seus lucros e preserve seu capital.";
         }
 
-        // --- Chart ---
+        // --- History Specific ---
+        function recordHistory(customName) {
+            const p = globalData.projects[globalData.activeProject];
+            const lastCompletedIndex = p.checkpoints.lastIndexOf(true);
+            if (lastCompletedIndex === -1) return;
+
+            let historyVal = p.capital;
+            for(let i=0; i <= lastCompletedIndex; i++) historyVal *= p.odds[i];
+
+            const record = {
+                name: customName || "Alavancagem sem nome",
+                date: new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+                round: lastCompletedIndex + 1,
+                total: historyVal
+            };
+
+            p.history.unshift(record);
+            if(p.history.length > 15) p.history.pop();
+            saveAllData();
+        }
+
+        function renderHistory() {
+            const p = globalData.projects[globalData.activeProject];
+            const list = document.getElementById('historyList');
+            if(!p.history || p.history.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-500 italic py-2 text-center">Sem registros.</p>`;
+                return;
+            }
+
+            list.innerHTML = p.history.map(item => `
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex flex-col gap-1">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-black text-emerald-400 truncate pr-2 uppercase">${item.name}</p>
+                        <p class="text-[9px] text-slate-500 font-bold whitespace-nowrap">${item.date}</p>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-[10px] font-bold text-slate-300">Até Rodada ${item.round}</p>
+                        <p class="text-xs font-black text-white">${formatCurrency(item.total)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if(confirm('Limpar todo o histórico desta pasta?')) {
+                globalData.projects[globalData.activeProject].history = [];
+                refresh();
+            }
+        }
+
+        function resetWholeApp() {
+            const p = globalData.projects[globalData.activeProject];
+            const hasProgress = p.checkpoints.some(c => c === true);
+            
+            if (hasProgress) {
+                let name = prompt("Dê um nome para salvar no histórico desta pasta:", "Tentativa " + new Date().toLocaleDateString());
+                if (name === null) return;
+                recordHistory(name);
+            }
+            
+            p.checkpoints = new Array(p.rounds).fill(false);
+            toggleMenu();
+            refresh();
+        }
+
+        // --- Chart & Utils ---
+        let growthChart = null;
         function initChart() {
             const ctx = document.getElementById('growthChart').getContext('2d');
-            appState.chart = new Chart(ctx, {
+            if (growthChart) growthChart.destroy();
+            growthChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: Array.from({length: appState.rounds + 1}, (_, i) => i),
+                    labels: [],
                     datasets: [{
-                        label: 'Evolução',
+                        label: 'Curva',
                         data: [],
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         fill: true,
                         tension: 0.4,
-                        pointRadius: 2
+                        pointRadius: 0
                     }]
                 },
                 options: {
@@ -378,55 +535,29 @@
         }
 
         function updateChart(data) {
-            if(!appState.chart) return;
-            appState.chart.data.labels = Array.from({length: data.length}, (_, i) => i);
-            appState.chart.data.datasets[0].data = data;
-            appState.chart.update();
+            if(!growthChart) return;
+            growthChart.data.labels = Array.from({length: data.length}, (_, i) => i);
+            growthChart.data.datasets[0].data = data;
+            growthChart.update();
         }
 
-        // --- Utils ---
         function formatCurrency(v) {
             return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
         function triggerVictory() {
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#10b981', '#3b82f6', '#fbbf24']
-            });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
 
-        function saveToStorage() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                capital: appState.capital,
-                rounds: appState.rounds,
-                withdrawAt: appState.withdrawAt,
-                checkpoints: appState.checkpoints,
-                odds: appState.odds
-            }));
+        // --- Storage ---
+        function saveAllData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(globalData));
         }
 
-        function loadFromStorage() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            if (data) {
-                const p = JSON.parse(data);
-                appState.capital = p.capital || 30;
-                appState.rounds = p.rounds || 7;
-                appState.withdrawAt = p.withdrawAt || 0;
-                appState.checkpoints = p.checkpoints || new Array(appState.rounds).fill(false);
-                appState.odds = p.odds || new Array(appState.rounds).fill(1.50);
-            } else {
-                appState.checkpoints = new Array(7).fill(false);
-                appState.odds = new Array(7).fill(1.50);
-            }
-        }
-
-        function resetWholeApp() {
-            if(confirm('Isso apagará todo o progresso. Tem certeza?')) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload();
+        function loadAllData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                globalData = JSON.parse(raw);
             }
         }
     </script>
