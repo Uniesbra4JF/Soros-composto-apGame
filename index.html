@@ -3,321 +3,432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desafio Alavancagem 30 -> 512</title>
+    <title>Alavancagem Pro | Gestão de Soros</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
-        .checkbox-wrapper input:checked + div {
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .custom-checkbox:checked + div {
             background-color: #10b981;
             border-color: #10b981;
         }
-        .checkbox-wrapper input:checked + div svg {
-            display: block;
+
+        .row-completed {
+            background-color: rgba(16, 185, 129, 0.05);
+            opacity: 0.8;
         }
-        
-        /* Smooth transitions for row completion */
-        tr { transition: all 0.3s ease; }
-        tr.completed {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: #6ee7b7;
+
+        /* Hide arrows in number input */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
-        tr.completed td {
-            text-decoration: line-through;
-            opacity: 0.7;
-        }
-        tr.completed td.status-cell, 
-        tr.completed td.value-cell {
-            text-decoration: none;
-            opacity: 1;
-            font-weight: bold;
+
+        .round-btn.active {
+            background-color: #10b981;
+            border-color: #34d399;
+            color: white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+<body class="min-h-screen pb-12">
 
     <!-- Header -->
-    <header class="text-center mb-8 max-w-2xl w-full">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mb-4">
-            <i class="fas fa-chart-line text-2xl"></i>
-        </div>
-        <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Desafio 7 Rodadas</h1>
-        <p class="text-gray-400">Transforme <span class="text-emerald-400 font-bold">R$ 30,00</span> em <span class="text-emerald-400 font-bold">R$ 512,58</span> com Odd 1.50</p>
-    </header>
-
-    <!-- Control Panel -->
-    <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 w-full max-w-4xl mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-                <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Banca Inicial</label>
-                <div class="relative">
-                    <span class="absolute left-3 top-3 text-gray-500">R$</span>
-                    <input type="number" id="startAmount" value="30" oninput="handleInputChange()" class="w-full bg-gray-900 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
+    <nav class="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-emerald-500 p-2 rounded-lg">
+                    <i class="fas fa-bolt text-white"></i>
                 </div>
+                <span class="font-extrabold text-xl tracking-tight uppercase">Alavancagem<span class="text-emerald-500">Pro</span></span>
             </div>
-            <div>
-                <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Odd Fixa</label>
-                <div class="relative">
-                    <span class="absolute left-3 top-3 text-gray-500">@</span>
-                    <input type="number" step="0.01" id="oddValue" value="1.50" oninput="handleInputChange()" class="w-full bg-gray-900 border border-gray-600 rounded-lg py-2 pl-8 pr-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
-                </div>
-            </div>
-            <div class="flex items-end">
-                <button onclick="resetCalculator()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 h-[42px]">
-                    <i class="fas fa-rotate-right"></i> Reiniciar / Recalcular
+            <div class="flex items-center gap-4">
+                <button onclick="resetWholeApp()" class="text-slate-400 hover:text-white text-sm transition-colors">
+                    <i class="fas fa-trash-can mr-1"></i> Reiniciar
                 </button>
             </div>
         </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Progress Bar -->
-        <div class="mt-6">
-            <div class="flex justify-between text-sm mb-1">
-                <span class="text-gray-400">Progresso da Banca</span>
-                <span class="text-emerald-400 font-bold" id="progressText">0%</span>
-            </div>
-            <div class="w-full bg-gray-900 rounded-full h-4 overflow-hidden border border-gray-700">
-                <div id="progressBar" class="bg-gradient-to-r from-emerald-600 to-emerald-400 h-4 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
-            </div>
-        </div>
-    </div>
+        <!-- Sidebar: Configurações -->
+        <aside class="lg:col-span-4 space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-2xl border border-slate-700">
+                <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+                    <i class="fas fa-sliders-h text-emerald-400"></i> Parâmetros
+                </h2>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Investimento Inicial</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-500 font-medium">R$</span>
+                            <input type="number" id="baseCapital" value="30" oninput="updateCalculations()" 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                        </div>
+                    </div>
 
-    <!-- The Checklist Table -->
-    <div class="bg-gray-800 rounded-xl shadow-xl border border-gray-700 w-full max-w-4xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-900/50 text-gray-400 text-xs uppercase border-b border-gray-700">
-                        <th class="p-4 w-16 text-center">#</th>
-                        <th class="p-4">Entrada (Aposta)</th>
-                        <th class="p-4 w-24">Odd</th>
-                        <th class="p-4 text-emerald-400">Retorno Total</th>
-                        <th class="p-4 w-24 text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="divide-y divide-gray-700">
-                    <!-- Javascript populates this -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Quantidade de Rodadas</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="setRounds(3)" id="btn-round-3" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">3</button>
+                            <button onclick="setRounds(5)" id="btn-round-5" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">5</button>
+                            <button onclick="setRounds(7)" id="btn-round-7" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">7</button>
+                            <button onclick="setRounds(10)" id="btn-round-10" class="round-btn py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm font-bold hover:bg-slate-700 transition-all">10</button>
+                        </div>
+                    </div>
 
-    <!-- Info Footer -->
-    <div class="mt-8 text-center text-gray-500 text-sm max-w-lg">
-        <p>A estratégia consiste em reinvestir o lucro total (Juros Compostos) a cada rodada. Uma falha retorna ao estágio 0 (R$ 30,00).</p>
-        <p class="mt-2 text-xs text-gray-600" id="saveStatus"><i class="fas fa-check-circle mr-1"></i> Sistema de salvamento automático ativo.</p>
-    </div>
+                    <div class="pt-4 border-t border-slate-700/50">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-slate-300">Resgatar capital na:</span>
+                            <select id="withdrawRound" onchange="updateCalculations()" class="bg-slate-800 border border-slate-700 rounded-md text-sm px-2 py-1 outline-none text-white">
+                                <option value="0">Nenhuma</option>
+                                <option value="1">1ª Rodada</option>
+                                <option value="2">2ª Rodada</option>
+                                <option value="3">3ª Rodada</option>
+                                <option value="4">4ª Rodada</option>
+                                <option value="5">5ª Rodada</option>
+                            </select>
+                        </div>
+                        <p class="text-[10px] text-slate-500 italic text-center">Isso garante o retorno do seu investimento inicial cedo.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 hidden md:block">
+                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase">Crescimento Exponencial</h3>
+                <canvas id="growthChart" height="200"></canvas>
+            </div>
+        </aside>
+
+        <!-- Main Content: Tabela e Progresso -->
+        <section class="lg:col-span-8 space-y-6">
+            
+            <!-- Resumo de Progresso -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-emerald-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Progresso</p>
+                    <div class="flex items-end gap-1">
+                        <span id="stat-progress" class="text-xl font-black text-white leading-none">0%</span>
+                        <span class="text-[10px] text-slate-500" id="stat-completed">0/7</span>
+                    </div>
+                </div>
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-blue-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Retorno Final</p>
+                    <span id="stat-total" class="text-xl font-black text-emerald-400 leading-none">R$ 0,00</span>
+                </div>
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-amber-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Entrada Atual</p>
+                    <span id="stat-next-bet" class="text-xl font-black text-white leading-none">R$ 0,00</span>
+                </div>
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-purple-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Probabilidade</p>
+                    <span id="stat-prob" class="text-xl font-black text-purple-400 leading-none">0%</span>
+                </div>
+            </div>
+
+            <!-- Tabela Interativa -->
+            <div class="glass-card rounded-2xl shadow-xl overflow-hidden border border-slate-700">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/80 text-slate-400 text-[10px] uppercase tracking-widest">
+                                <th class="p-4 w-12 text-center">#</th>
+                                <th class="p-4">Valor de Entrada</th>
+                                <th class="p-4 w-24">Odd</th>
+                                <th class="p-4">Retorno Bruto</th>
+                                <th class="p-4 w-20 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="challengeTable" class="divide-y divide-slate-800">
+                            <!-- JS Injects Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adviceBox" class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-200 text-sm flex gap-3">
+                <i class="fas fa-info-circle mt-1"></i>
+                <p id="adviceText">Ajuste as odds conforme o mercado e marque suas vitórias.</p>
+            </div>
+        </section>
+    </main>
 
     <script>
-        // Configuration
-        const TOTAL_ROUNDS = 7;
-        const STORAGE_KEY_STATE = 'betting_challenge_state_v2'; // Alterado a chave para evitar conflitos antigos
-        const STORAGE_KEY_VALUES = 'betting_challenge_values_v2';
-        
-        // Global State
-        let progressState = new Array(TOTAL_ROUNDS).fill(false);
+        // --- State ---
+        let appState = {
+            capital: 30,
+            rounds: 7,
+            withdrawAt: 0,
+            checkpoints: [], 
+            odds: [],
+            chart: null
+        };
 
-        // DOM Elements
-        const tableBody = document.getElementById('tableBody');
-        const startInput = document.getElementById('startAmount');
-        const oddInput = document.getElementById('oddValue');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
+        const STORAGE_KEY = 'alavancagem_pro_v2_brazil';
 
-        // Initialization
-        document.addEventListener('DOMContentLoaded', () => {
-            // First load data, THEN generate table
-            loadState();
-            generateTable();
-        });
+        // --- Init ---
+        window.onload = () => {
+            loadFromStorage();
+            initUI();
+            initChart();
+            refresh();
+        };
 
-        // --- Core Logic ---
-
-        function formatCurrency(value) {
-            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        function initUI() {
+            document.getElementById('baseCapital').value = appState.capital;
+            document.getElementById('withdrawRound').value = appState.withdrawAt;
+            updateRoundButtons();
         }
 
-        function calculateRows() {
-            let start = parseFloat(startInput.value) || 0;
-            let odd = parseFloat(oddInput.value) || 1.0;
-            let current = start;
-            let rows = [];
+        function refresh() {
+            renderTable();
+            updateStats();
+            saveToStorage();
+        }
 
-            for (let i = 0; i < TOTAL_ROUNDS; i++) {
-                let profit = current * odd;
-                rows.push({
-                    index: i + 1,
-                    entry: current,
-                    odd: odd,
-                    total: profit
-                });
-                current = profit;
+        function setRounds(n) {
+            if(n !== appState.rounds) {
+                appState.rounds = n;
+                // Preencher arrays caso sejam novos
+                appState.checkpoints = new Array(n).fill(false);
+                appState.odds = new Array(n).fill(1.50);
+                updateRoundButtons();
+                refresh();
             }
-            return rows;
         }
 
-        function generateTable() {
-            const data = calculateRows();
-            tableBody.innerHTML = '';
-            
-            let completedCount = 0;
+        function updateRoundButtons() {
+            document.querySelectorAll('.round-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.id === `btn-round-${appState.rounds}`) btn.classList.add('active');
+            });
+        }
 
-            data.forEach((row, idx) => {
-                const isChecked = progressState[idx]; // Reads from global state
-                if(isChecked) completedCount++;
+        function updateCalculations() {
+            appState.capital = parseFloat(document.getElementById('baseCapital').value) || 0;
+            appState.withdrawAt = parseInt(document.getElementById('withdrawRound').value);
+            refresh();
+        }
+
+        function updateOdd(index, value) {
+            appState.odds[index] = parseFloat(value) || 1.01;
+            refresh();
+        }
+
+        function toggleStep(index) {
+            appState.checkpoints[index] = !appState.checkpoints[index];
+            if (index === appState.rounds - 1 && appState.checkpoints[index]) {
+                triggerVictory();
+            }
+            refresh();
+        }
+
+        // --- Rendering ---
+        function renderTable() {
+            const tbody = document.getElementById('challengeTable');
+            tbody.innerHTML = '';
+            
+            let currentBalance = appState.capital;
+            let chartData = [currentBalance];
+
+            for (let i = 0; i < appState.rounds; i++) {
+                const isChecked = appState.checkpoints[i];
+                const odd = appState.odds[i] || 1.50;
+                
+                let entryValue = currentBalance;
+                let returnTotal = entryValue * odd;
+
+                let withdrawMsg = "";
+                if (appState.withdrawAt === (i + 1)) {
+                    returnTotal -= appState.capital;
+                    withdrawMsg = `<span class="text-[9px] block text-amber-400 font-bold uppercase tracking-tighter">Resgate: -${formatCurrency(appState.capital)}</span>`;
+                }
 
                 const tr = document.createElement('tr');
-                tr.className = `hover:bg-gray-700/50 ${isChecked ? 'completed' : ''}`;
+                tr.className = `transition-all ${isChecked ? 'row-completed' : 'hover:bg-slate-800/40'}`;
                 
-                // Note: The checked attribute is set directly in HTML based on state
                 tr.innerHTML = `
-                    <td class="p-4 text-center text-gray-500 font-mono">${row.index}</td>
-                    <td class="p-4 font-medium text-gray-300">${formatCurrency(row.entry)}</td>
-                    <td class="p-4 text-gray-400 font-mono text-sm">@${row.odd.toFixed(2)}</td>
-                    <td class="p-4 value-cell text-emerald-400 font-bold text-lg">${formatCurrency(row.total)}</td>
-                    <td class="p-4 text-center status-cell">
-                        <label class="checkbox-wrapper cursor-pointer inline-block relative w-6 h-6">
-                            <input type="checkbox" 
-                                class="peer hidden" 
-                                onchange="toggleRound(${idx})" 
-                                ${isChecked ? 'checked' : ''}> 
-                            <div class="w-6 h-6 border-2 border-gray-500 rounded bg-gray-900 transition-all peer-checked:border-emerald-500 peer-checked:bg-emerald-500 flex items-center justify-center">
-                                <svg class="hidden w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </div>
+                    <td class="p-4 text-center font-mono text-slate-500 text-xs">${i + 1}</td>
+                    <td class="p-4">
+                        <span class="font-bold ${isChecked ? 'text-slate-400' : 'text-white'}">
+                            ${formatCurrency(entryValue)}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <input type="number" step="0.01" value="${odd.toFixed(2)}" 
+                            onchange="updateOdd(${i}, this.value)"
+                            class="w-16 bg-slate-900/50 border border-slate-700 rounded text-xs p-1 text-center focus:border-emerald-500 outline-none text-white font-mono">
+                    </td>
+                    <td class="p-4">
+                        <span class="font-bold text-emerald-400">
+                            ${formatCurrency(returnTotal)}
+                            ${withdrawMsg}
+                        </span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" 
+                                ${isChecked ? 'checked' : ''} 
+                                onchange="toggleStep(${i})">
+                            <div class="w-10 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
                         </label>
                     </td>
                 `;
-                tableBody.appendChild(tr);
+                tbody.appendChild(tr);
+
+                currentBalance = returnTotal;
+                chartData.push(currentBalance);
+            }
+
+            updateChart(chartData);
+        }
+
+        function updateStats() {
+            const completedCount = appState.checkpoints.filter(c => c === true).length;
+            const progress = Math.round((completedCount / appState.rounds) * 100);
+            
+            document.getElementById('stat-progress').innerText = `${progress}%`;
+            document.getElementById('stat-completed').innerText = `${completedCount}/${appState.rounds}`;
+            
+            // Calculo da Probabilidade teórica (1/odd) * (1/odd)...
+            let prob = 100;
+            appState.odds.forEach(o => {
+                prob *= (1 / o);
             });
+            document.getElementById('stat-prob').innerText = `${prob.toFixed(2)}%`;
 
-            updateProgress(completedCount);
-        }
+            // Calculo dos Retornos
+            let bal = appState.capital;
+            let nextBet = bal;
 
-        function toggleRound(index) {
-            // Update state
-            progressState[index] = !progressState[index];
-            
-            // Save IMMEDIATELY
-            saveState();
-            
-            // Redraw to reflect changes
-            generateTable();
-
-            // Check for victory
-            if (index === TOTAL_ROUNDS - 1 && progressState[index]) {
-                triggerCelebration();
+            for(let i=0; i<appState.rounds; i++){
+                if (appState.checkpoints[i]) {
+                    bal = (bal * appState.odds[i]);
+                    if(appState.withdrawAt === (i+1)) bal -= appState.capital;
+                    if(i+1 < appState.rounds) nextBet = bal;
+                } else {
+                    nextBet = bal;
+                    for(let j=i; j<appState.rounds; j++) {
+                        bal = (bal * appState.odds[j]);
+                        if(appState.withdrawAt === (j+1)) bal -= appState.capital;
+                    }
+                    break;
+                }
             }
-        }
 
-        function handleInputChange() {
-            saveState();
-            generateTable();
-        }
-
-        function updateProgress(count) {
-            const percentage = Math.round((count / TOTAL_ROUNDS) * 100);
-            progressBar.style.width = `${percentage}%`;
-            progressText.innerText = `${percentage}%`;
+            document.getElementById('stat-total').innerText = formatCurrency(bal);
+            document.getElementById('stat-next-bet').innerText = formatCurrency(nextBet);
             
-            if(percentage === 100) {
-                progressBar.classList.remove('from-emerald-600', 'to-emerald-400');
-                progressBar.classList.add('from-yellow-400', 'to-orange-500'); 
-                progressText.classList.add('text-yellow-400');
-                progressText.classList.remove('text-emerald-400');
-            } else {
-                progressBar.classList.add('from-emerald-600', 'to-emerald-400');
-                progressBar.classList.remove('from-yellow-400', 'to-orange-500');
-                progressText.classList.remove('text-yellow-400');
-                progressText.classList.add('text-emerald-400');
-            }
+            const advice = document.getElementById('adviceText');
+            if (progress === 0) advice.innerText = "Dica: Em mercados voláteis, tente odds entre 1.30 e 1.60 para maior segurança inicial.";
+            else if (progress < 100) advice.innerText = "Foco total! O crescimento agora se torna muito mais rápido.";
+            else advice.innerText = "META BATIDA! Saque seus lucros e preserve seu capital.";
         }
 
-        // --- Persistence Logic ---
-
-        function saveState() {
-            try {
-                localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(progressState));
-                localStorage.setItem(STORAGE_KEY_VALUES, JSON.stringify({
-                    start: startInput.value,
-                    odd: oddInput.value
-                }));
-                // Visual feedback (optional)
-                document.getElementById('saveStatus').innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-500"></i> Salvo com sucesso.';
-                setTimeout(() => {
-                    document.getElementById('saveStatus').innerHTML = '<i class="fas fa-save mr-1"></i> Seus dados são salvos automaticamente.';
-                }, 2000);
-            } catch (e) {
-                console.error("Erro ao salvar:", e);
-                document.getElementById('saveStatus').innerText = 'Erro ao salvar (verifique permissões do navegador)';
-            }
-        }
-
-        function loadState() {
-            try {
-                const savedState = localStorage.getItem(STORAGE_KEY_STATE);
-                const savedValues = localStorage.getItem(STORAGE_KEY_VALUES);
-                
-                // Load Checklist State
-                if (savedState) {
-                    const parsed = JSON.parse(savedState);
-                    // Ensure it is a valid array of the correct length
-                    if (Array.isArray(parsed) && parsed.length === TOTAL_ROUNDS) {
-                        progressState = parsed;
+        // --- Chart ---
+        function initChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            appState.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: appState.rounds + 1}, (_, i) => i),
+                    datasets: [{
+                        label: 'Evolução',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } }
                     }
                 }
-                
-                // Load Values (Start Amount / Odds)
-                if (savedValues) {
-                    const values = JSON.parse(savedValues);
-                    if (values.start) startInput.value = values.start;
-                    if (values.odd) oddInput.value = values.odd;
-                }
-            } catch (e) {
-                console.error("Erro crítico ao carregar dados:", e);
-                // Fallback to defaults if loading fails completely
-                progressState = new Array(TOTAL_ROUNDS).fill(false);
+            });
+        }
+
+        function updateChart(data) {
+            if(!appState.chart) return;
+            appState.chart.data.labels = Array.from({length: data.length}, (_, i) => i);
+            appState.chart.data.datasets[0].data = data;
+            appState.chart.update();
+        }
+
+        // --- Utils ---
+        function formatCurrency(v) {
+            return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function triggerVictory() {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#10b981', '#3b82f6', '#fbbf24']
+            });
+        }
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                capital: appState.capital,
+                rounds: appState.rounds,
+                withdrawAt: appState.withdrawAt,
+                checkpoints: appState.checkpoints,
+                odds: appState.odds
+            }));
+        }
+
+        function loadFromStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                const p = JSON.parse(data);
+                appState.capital = p.capital || 30;
+                appState.rounds = p.rounds || 7;
+                appState.withdrawAt = p.withdrawAt || 0;
+                appState.checkpoints = p.checkpoints || new Array(appState.rounds).fill(false);
+                appState.odds = p.odds || new Array(appState.rounds).fill(1.50);
+            } else {
+                appState.checkpoints = new Array(7).fill(false);
+                appState.odds = new Array(7).fill(1.50);
             }
         }
 
-        function resetCalculator() {
-            if(confirm('Tem certeza que deseja reiniciar todo o progresso?')) {
-                progressState = new Array(TOTAL_ROUNDS).fill(false);
-                startInput.value = 30;
-                oddInput.value = 1.50;
-                saveState();
-                generateTable();
+        function resetWholeApp() {
+            if(confirm('Isso apagará todo o progresso. Tem certeza?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
             }
-        }
-
-        function triggerCelebration() {
-            const duration = 3000;
-            const end = Date.now() + duration;
-
-            (function frame() {
-                confetti({
-                    particleCount: 5,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: ['#34d399', '#fbbf24']
-                });
-                confetti({
-                    particleCount: 5,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: ['#34d399', '#fbbf24']
-                });
-
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
-            }());
         }
     </script>
 </body>
 </html>
-
-
